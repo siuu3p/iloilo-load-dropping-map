@@ -2,6 +2,10 @@
 
 Interactive replay of MORE Power's manual load dropping in Iloilo City, Aug 27 – Sep 15, 2026.
 
+**Live map:** https://siuu3p.github.io/iloilo-load-dropping-map/
+
+[![Heatmap view of Iloilo City barangays with the replay timeline and the list of feeders offline](og.jpg)](https://siuu3p.github.io/iloilo-load-dropping-map/)
+
 - 197 outages across 31 feeders, from MORE Power's posts on its official Facebook page
 - Satellite map with all 180 barangays shaded by which feeders serve them
 - Live replay: feeders go dark on the clock, with elapsed time per feeder
