@@ -1,0 +1,466 @@
+<title>Iloilo Load Dropping Replay</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>__LEAFLETCSS__</style>
+<style>
+/* Layout: control-room board over a night satellite view. Clock strip on top, map left, live outage log right, timeline scrubber below. Single deliberate night look: served barangays glow amber, dropped ones go black with a red edge. */
+:root{
+  --bg:#0b0e14; --panel:#131824; --line:#232b3b; --fg:#e7ebf3; --muted:#8a94a8;
+  --lit:#ffc24a; --dark:#ff4d5e; --sel:#5fd4ff;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
+.wrap{max-width:1360px;margin:0 auto;display:grid;gap:14px}
+h1{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.02em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.head{display:grid;gap:2px}
+.transport{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 18px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tstrip{min-width:0}
+.transport .days{grid-column:1/-1}
+.mapbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+.mapbar button,.mapbar select{font-size:12px;padding:5px 10px}
+.mapbar button[aria-pressed="true"]{border-color:var(--lit);color:var(--lit)}
+.grow{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#262f42;color:var(--fg)}
+.about{border-top:1px solid var(--line);padding-top:18px;margin-top:6px}
+.about h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:.03em;margin:0 0 12px}
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px 28px}
+.agrid > div{min-width:0}
+.about h3{font:600 12px var(--body);text-transform:uppercase;letter-spacing:.09em;color:var(--fg);margin:0 0 6px}
+.about p,.about li{font-size:13px;line-height:1.6;color:#aab3c4;margin:0 0 6px}
+.about ul{margin:0;padding-left:18px}
+.about li{margin:0 0 4px}
+@media (max-width:700px){.transport{grid-template-columns:1fr}}
+.board{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.cell{background:var(--panel);padding:10px 14px;min-width:0;flex:1 1 180px}
+.lab{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.val{font-family:var(--mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.val small{font-size:13px;color:var(--muted);font-weight:400;margin-left:6px}
+.val.red{color:var(--dark)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select{font:500 13px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 12px;cursor:pointer}
+button:hover,select:hover{border-color:#3a4660}
+button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid var(--lit);outline-offset:2px}
+#play{background:var(--lit);color:#1a1206;border-color:var(--lit);font-weight:600;min-width:84px}
+.days{display:flex;flex-wrap:wrap;gap:6px}
+.days button{padding:4px 9px;font-size:12px;font-family:var(--mono)}
+.days button[aria-pressed="true"]{border-color:var(--lit);color:var(--lit)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px}
+.mapbox{background:#05070b;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:relative;min-width:0}
+#map{height:min(72vh,680px);min-height:420px;background:#05070b}
+.legend{position:absolute;left:10px;bottom:10px;z-index:500;display:flex;gap:12px;font-size:12px;color:#c9d0dd;flex-wrap:wrap;background:rgba(11,14,20,.82);padding:6px 10px;border-radius:7px;max-width:calc(100% - 20px)}
+.legend i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-2px;border-radius:2px}
+.hlegend{align-items:center}
+.ramp{display:inline-grid;gap:2px;min-width:180px}
+.ramp .grad{display:block;width:100%;height:10px;margin:0;border-radius:3px;background:linear-gradient(90deg,#2b1d5c,#7b2a8c,#c8366b,#f26b3a,#fbb33a,#fff27a)}
+.ramp .ticks{display:flex;justify-content:space-between;font:10px var(--mono);color:var(--muted)}
+#topb .arow{grid-template-columns:130px 1fr 48px}
+#topb .arow span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#topb .abar>div{background:linear-gradient(90deg,#7b2a8c,#f26b3a,#fff27a)}
+/* badge marker */
+.fd .bd{display:none;position:absolute;left:28px;top:21px;transform:translate(-50%,-50%);white-space:nowrap;font:600 10.5px var(--mono);border-radius:999px;overflow:hidden}
+.mk-badge .fd svg,.mk-none .fd{display:none}
+.mk-badge .fd .bd{display:block}
+.fd .bd{width:9px;height:9px;background:var(--lit);box-shadow:0 0 0 2px rgba(5,7,11,.7),0 0 10px 2px rgba(255,194,74,.55)}
+.fd .bd span{display:none}
+.fd.off .bd{width:auto;height:auto;background:rgba(10,8,12,.92);box-shadow:0 0 0 1.5px #ff4d5e;padding:3px 8px 4px;color:#f2f4f8}
+.fd.off .bd span{display:inline}
+.fd.off .bd .bt{color:#ff6b79;margin-left:6px}
+.fd .bd i{position:absolute;left:0;bottom:0;height:2px;background:#ff4d5e}
+.fd.sel .bd{box-shadow:0 0 0 2px var(--sel)}
+.mk-none .fd.sel{display:block}
+.heat .fd:not(.off):not(.sel){display:none}
+.side{display:grid;gap:14px;align-content:start;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.card h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.03em;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
+.card h2 span{color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:400;text-align:right}
+.log{display:grid;gap:8px;max-height:300px;overflow:auto}
+.row{display:grid;gap:4px;cursor:pointer}
+.row .t{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.row .t b{font-weight:600}
+.row .t em{font-style:normal;font-family:var(--mono);color:var(--dark);font-size:12px}
+.row .m{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar>div{height:100%;background:var(--dark)}
+.empty{color:var(--muted);font-size:13px}
+.areas{display:grid;gap:6px}
+.arow{display:grid;grid-template-columns:86px 1fr 56px;gap:8px;align-items:center;font-size:12px}
+.arow .n{font-family:var(--mono);text-align:right;color:var(--muted)}
+.abar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.abar>div{height:100%;background:linear-gradient(90deg,#b8323f,var(--dark))}
+.strip{width:100%;height:46px;display:block;cursor:pointer;touch-action:none}
+.striplab{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;gap:8px}
+#detail .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin-bottom:8px}
+#detail .kv dt{color:var(--muted)}#detail .kv dd{margin:0;font-family:var(--mono)}
+#detail ul{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:12px;max-height:130px;overflow:auto;display:grid;gap:2px}
+#detail li.now{color:var(--lit)}
+#detail .brgys{font-size:12px;color:#c4cbd9;line-height:1.5;margin:6px 0 8px;max-height:110px;overflow:auto}
+.conf{display:inline-block;font:600 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;border:1px solid currentColor}
+.conf.high{color:#7ad69a}.conf.med{color:#e8c25b}.conf.low{color:#ff9a5c}.conf.none{color:var(--muted)}
+/* leaflet theming */
+.leaflet-container{font-family:var(--body);background:#05070b}
+.leaflet-control-attribution{background:rgba(11,14,20,.8)!important;color:var(--muted)!important;font-size:10px}
+.leaflet-control-attribution a{color:#a9b4c8!important}
+.leaflet-bar a{background:var(--panel)!important;color:var(--fg)!important;border-color:var(--line)!important}
+.leaflet-tooltip{background:rgba(11,14,20,.94);color:var(--fg);border:1px solid var(--line);font-size:12px;box-shadow:none}
+.leaflet-tooltip:before{display:none}
+.fd{width:56px;height:62px;margin:-21px 0 0 -28px;cursor:pointer;overflow:visible}
+.fd svg{overflow:visible;display:block}
+.fd .halo{opacity:1;transition:opacity .3s}
+.fd.off .halo{opacity:0}
+.fd .core{fill:var(--lit);stroke:#1a1206;stroke-width:1.5;transition:fill .3s}
+.fd.off .core{fill:#1b1f2b;stroke:#ff4d5e}
+.fd .track{fill:rgba(5,7,11,.55);stroke:transparent;stroke-width:3.5}
+.fd.off .track{stroke:#4a1d27}
+.fd .prog{fill:none;stroke:var(--dark);stroke-width:3.5;stroke-linecap:round}
+.fd .tag{font:600 10px var(--mono);fill:#f2f4f8;text-anchor:middle;paint-order:stroke;stroke:#05070b;stroke-width:3}
+.fd .el{font:700 10.5px var(--mono);fill:#ff6b79;text-anchor:middle;paint-order:stroke;stroke:#05070b;stroke-width:3}
+.fd.sel .core{stroke:var(--sel);stroke-width:3}
+.fd.off .pulse{animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{r:11;opacity:.8}100%{r:24;opacity:0}}
+@media (prefers-reduced-motion:reduce){.fd.off .pulse{animation:none;opacity:0}}
+.ss{font:600 10px var(--mono);color:#cfe7ff;background:rgba(10,30,50,.85);border:1px solid #3d7fb8;border-radius:4px;padding:1px 5px;white-space:nowrap;transform:translate(-50%,-50%);display:inline-block}
+.hide-ss .ss,.hide-tags .fd .tag,.lowz .fd:not(.off):not(.sel) .tag{display:none}
+.lowz .ss{font-size:9px;opacity:.85}
+@media (max-width:1000px){.main{grid-template-columns:1fr}}
+@media (max-width:560px){.cell{flex-basis:140px}.val{font-size:21px}h1{font-size:24px}#map{height:62vh;min-height:360px}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>Iloilo City Manual Load Dropping</h1>
+    <p class="sub">31 feeders · 197 outages · Aug 27 – Sep 15, 2026 · Source: MORE Power’s Facebook posts</p>
+  </header>
+
+  <div class="board">
+    <div class="cell"><div class="lab" id="dlab">Date</div><div class="val" id="clock">11:00</div></div>
+    <div class="cell"><div class="lab">Elapsed since first drop today</div><div class="val" id="elapsed">00:00:00</div></div>
+    <div class="cell"><div class="lab">Feeders dark now</div><div class="val red" id="dark">0<small>/ 31</small></div></div>
+    <div class="cell"><div class="lab">Barangays hit now</div><div class="val red" id="brgy">0<small>/ 180</small></div></div>
+    <div class="cell"><div class="lab">Feeder-hours lost so far</div><div class="val" id="lost">0.0<small>of 437.1</small></div></div>
+  </div>
+
+  <section class="transport" aria-label="Playback">
+    <div class="tctl">
+      <button id="play" type="button">▶ Play</button>
+      <button id="back" type="button" title="Back 30 minutes" aria-label="Back 30 minutes">−30m</button>
+      <button id="fwd" type="button" title="Forward 30 minutes" aria-label="Forward 30 minutes">+30m</button>
+      <select id="speed" aria-label="Playback speed">
+        <option value="5">5 min / sec</option>
+        <option value="15" selected>15 min / sec</option>
+        <option value="30">30 min / sec</option>
+        <option value="60">1 hr / sec</option>
+      </select>
+    </div>
+    <div class="tstrip">
+      <canvas class="strip" id="strip" tabindex="0" aria-label="Timeline. Bar height is feeders dark at once. Drag, or use left and right arrow keys."></canvas>
+      <div class="striplab"><span>Feeders dark at once</span><span id="peak"></span></div>
+    </div>
+    <div class="days" id="days" aria-label="Jump to day"></div>
+  </section>
+
+
+  <div class="main">
+    <div class="mapbox">
+      <div class="mapbar">
+        <div class="seg" role="group" aria-label="Map view">
+          <button type="button" data-mode="live" aria-pressed="true">Live</button>
+          <button type="button" data-mode="heat" aria-pressed="false">Heatmap</button>
+        </div>
+        <select id="hScope" hidden aria-label="Heatmap period"><option value="all">Whole period</option><option value="now">Up to playhead</option></select>
+        <span class="grow"></span>
+        <select id="mStyle" aria-label="Feeder marker style"><option value="badge" selected>Badges</option><option value="ring">Rings</option><option value="none">No markers</option></select>
+        <button id="tSS" type="button" aria-pressed="true">Substations</button>
+        <button id="tFit" type="button" title="Reset view" aria-label="Reset view">⤢</button>
+      </div>
+      <div id="map" class="mk-badge" role="region" aria-label="Satellite map of Iloilo City with feeder outages"></div>
+      <div class="legend hlegend" id="hlegend" hidden>
+        <span>Hours with power out <b id="hwhen"></b></span>
+        <span class="ramp"><i class="grad"></i><span class="ticks"><span>0</span><span id="hmid"></span><span id="hmax"></span></span></span>
+        <span><i style="background:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)"></i>No feeder listing / no outage</span>
+      </div>
+      <div class="legend" id="llegend">
+        <span><i style="background:rgba(255,194,74,.45)"></i>Served, power on</span>
+        <span><i style="background:#06070b;box-shadow:inset 0 0 0 2px #ff4d5e"></i>Whole barangay dark</span>
+        <span><i style="background:#2a1b22;box-shadow:inset 0 0 0 1px #ff4d5e"></i>Part of barangay dark</span>
+        <span><i style="border:2px dashed #ff4d5e;background:none;border-radius:50%"></i>Feeder area unknown</span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card"><h2>Offline now <span id="ocount">0</span></h2><div class="log" id="log"></div></div>
+      <div class="card" id="detail"><h2>Feeder detail <span>tap a feeder</span></h2><div class="empty">Select a feeder on the map or in the list.</div></div>
+      <div class="card" id="topcard" hidden><h2>Most hours by barangay <span id="topwhen"></span></h2><div class="areas" id="topb"></div></div>
+      <div class="card"><h2>Hours lost by substation <span>to date</span></h2><div class="areas" id="areas"></div></div>
+    </div>
+  </div>
+
+  <section class="about" aria-labelledby="abouth">
+    <h2 id="abouth">About the data</h2>
+    <div class="agrid">
+      <div>
+        <h3>Outage times</h3>
+        <p>From MORE Power’s manual load dropping posts on its official Facebook page, logged in the workbook’s Combined Data tab.</p>
+        <ul>
+          <li>Molo F3 on Aug 27 is listed as 3:21 AM. The day’s tab and its 1h 53m duration say 3:21 PM, so the replay uses 3:21 PM.</li>
+          <li>No posts were logged for Sep 6, 12 and 13.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Feeder coverage</h3>
+        <p>24 feeders use MORE Power’s feeder coverage graphics from its Facebook page (Aug 2025, updated Apr 2026).</p>
+        <ul>
+          <li>Mandurriao F1, Megaworld F1 and Mobile F5 use older notices.</li>
+          <li>No list found for Diversion F2, Megaworld F2, Mobile F4 or Mandurriao F3. These show as a dashed ring.</li>
+          <li>Most lists cover only part of a barangay. Feeders were reshuffled in 2024–2025.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Heatmap</h3>
+        <p>Hours a barangay had at least one of its feeders dark. If two of its feeders were down at once, that time counts once.</p>
+        <p>Because coverage is often partial, these hours are an upper estimate for any one household.</p>
+      </div>
+      <div>
+        <h3>Map and locations</h3>
+        <ul>
+          <li>Imagery: Sentinel-2 cloudless 2024 by EOX, from Copernicus data (CC BY-NC-SA 4.0).</li>
+          <li>Roads and place names: Esri.</li>
+          <li>Barangay boundaries: PSA/NAMRIA.</li>
+          <li>Substations: OpenStreetMap. Arevalo (So-oc) and the Mobile unit (placed at Mandurriao) are approximate.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const EV = __EVENTS__;
+const GEO = __GEO__;
+const IMG = "__IMG__";
+const IMG_BOUNDS = [[10.660608, 122.486572], [10.790141, 122.607422]];
+const T0 = 660, W = 720;
+const DAYS = [...new Set(EV.map(e => e[0]))].sort();
+const TOTAL = DAYS.length * W;
+const FD = GEO.F.feeders, SS = GEO.F.substations;
+const SUB_OF = f => f.replace(/ Feeder \d+$/, "");
+const FEEDERS = Object.keys(FD).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+const SUBS = [...new Set(FEEDERS.map(SUB_OF))];
+const events = EV.map(([d, f, s, e]) => { const di = DAYS.indexOf(d); return {d, di, f, s, e, gs: di * W + s - T0, ge: di * W + e - T0}; });
+const byDay = DAYS.map((_, i) => events.filter(e => e.di === i));
+const fmtHM = m => String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + String(Math.floor(m % 60)).padStart(2, "0");
+const fmtDur = m => { m = Math.max(0, m); const h = Math.floor(m / 60), mm = Math.floor(m % 60); return h ? `${h}h ${String(mm).padStart(2, "0")}m` : `${mm}m`; };
+const fmtDate = d => new Date(d + "T00:00:00").toLocaleDateString("en-US", {weekday: "short", month: "short", day: "numeric"});
+const fmtShort = d => new Date(d + "T00:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"});
+const shortName = f => SUB_OF(f).replace("Mandurriao", "Mand.").replace("Megaworld", "Mega").replace("Diversion", "Div.") + " " + f.match(/\d+$/)[0];
+const $ = id => document.getElementById(id);
+
+// barangay -> feeders serving it
+const SERVED = {};
+for (const f of FEEDERS) for (const b of FD[f].b) { const n = b.replace(/\*$/, ""); (SERVED[n] ||= []).push({f, whole: b.endsWith("*")}); }
+
+// map
+const map = L.map("map", {zoomSnap: 0.25, maxBounds: L.latLngBounds(IMG_BOUNDS).pad(0.05), maxBoundsViscosity: 0.8, minZoom: 12.5, maxZoom: 17, attributionControl: true});
+L.imageOverlay(IMG, IMG_BOUNDS, {attribution: "Imagery: Sentinel-2 cloudless 2024 © EOX (Copernicus data) · Roads/labels © Esri · Boundaries PSA · Substations © OpenStreetMap"}).addTo(map);
+const HOME = L.latLngBounds([[10.684, 122.522], [10.742, 122.590]]);
+map.fitBounds(HOME);
+const BASE = {color: "rgba(255,255,255,.28)", weight: 0.7, fillColor: "#ffc24a", fillOpacity: 0};
+const layers = {};
+L.geoJSON(GEO.bg, {
+  style: f => ({...BASE, fillOpacity: SERVED[f.properties.n] ? 0.13 : 0}),
+  onEachFeature: (f, l) => { layers[f.properties.n] = l; l.bindTooltip(() => brgyTip(f.properties.n), {sticky: true}); }
+}).addTo(map);
+function brgyTip(n) {
+  const s = SERVED[n] || [];
+  if (mode === "heat") return `<b>${n}</b><br>${s.length ? `${heatHours(n).toFixed(1)} h without power ${scopeLabel()}<br><span style="color:#8a94a8">${s.length} feeder${s.length > 1 ? "s" : ""}: ${s.map(x => shortName(x.f)).join(", ")}</span>` : '<span style="color:#8a94a8">No feeder listing found</span>'}`;
+  const on = s.map(x => `${shortName(x.f)}${x.whole ? " (whole)" : ""}${curOff.has(x.f) ? ' <b style="color:#ff6b79">dark</b>' : ""}`);
+  return `<b>${n}</b><br>${s.length ? "Feeders: " + on.join(", ") : '<span style="color:#8a94a8">No feeder listing found</span>'}`;
+}
+// substations
+const ssLayer = L.layerGroup().addTo(map);
+for (const [k, v] of Object.entries(SS)) {
+  if (k === "Mobile") continue; // shares the Mandurriao site
+  L.marker([v[0], v[1]], {icon: L.divIcon({className: "", html: `<span class="ss">⚡ ${k}${k === "Mandurriao" ? " + Mobile" : ""}</span>`, iconSize: [0, 0]}), keyboard: false, interactive: true})
+    .bindTooltip(`<b>${k} substation</b>${k === "Mandurriao" ? "<br>Mobile substation assumed here" : ""}<br><span style="color:#8a94a8">${v[2]} · ${v[3]} confidence</span>`).addTo(ssLayer);
+}
+// feeders
+const R = 12, CIRC = 2 * Math.PI * R, nodes = {}, unknownRings = {};
+for (const f of FEEDERS) {
+  const html = `<svg width="56" height="62" viewBox="-28 -21 56 62"><circle class="halo" r="20" fill="url(#glw)"/><circle class="pulse" r="11" fill="none" stroke="#ff4d5e" stroke-width="1.5" opacity="0"/><circle class="track" r="${R}"/><circle class="prog" r="${R}" stroke-dasharray="0 ${CIRC}" transform="rotate(-90)"/><circle class="core" r="6.5"/><text class="tag" y="-15">${shortName(f)}</text><text class="el" y="27"></text></svg><div class="bd"><span class="bn">${shortName(f)}</span><span class="bt"></span><i></i></div>`;
+  const m = L.marker(FD[f].p, {icon: L.divIcon({className: "fd", html, iconSize: null}), title: f, riseOnHover: true}).addTo(map);
+  m.on("click", () => select(f));
+  nodes[f] = m;
+  if (!FD[f].b.length) unknownRings[f] = L.circle(FD[f].p, {radius: 650, color: "#ff4d5e", weight: 1.5, dashArray: "5 6", fill: false, opacity: 0, interactive: false}).addTo(map);
+}
+// shared gradient for halos
+document.body.insertAdjacentHTML("beforeend", '<svg width="0" height="0" style="position:absolute"><defs><radialGradient id="glw"><stop offset="0" stop-color="#ffc24a" stop-opacity=".6"/><stop offset="1" stop-color="#ffc24a" stop-opacity="0"/></radialGradient></defs></svg>');
+$("tSS").onclick = e => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", on); $("map").classList.toggle("hide-ss", !on); };
+$("tFit").onclick = () => map.fitBounds(HOME);
+
+// day chips
+const chips = [];
+DAYS.forEach((d, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = fmtShort(d); b.onclick = () => { const first = Math.min(...byDay[i].map(e => e.s)); seek(i * W + Math.max(0, first - T0 - 10)); }; $("days").appendChild(b); chips.push(b); });
+
+// timeline strip
+const strip = $("strip"), BK = 5, NB = TOTAL / BK, conc = new Array(NB).fill(0);
+for (const e of events) for (let b = Math.floor(e.gs / BK); b < Math.ceil(e.ge / BK); b++) conc[b]++;
+const maxC = Math.max(...conc), pk = conc.indexOf(maxC);
+$("peak").textContent = `Peak ${maxC} · ${fmtShort(DAYS[Math.floor(pk * BK / W)])} ${fmtHM(T0 + (pk * BK) % W)}`;
+function drawStrip(t) {
+  const dpr = window.devicePixelRatio || 1, w = strip.clientWidth, h = strip.clientHeight;
+  if (!w) return;
+  if (strip.width !== Math.round(w * dpr)) { strip.width = Math.round(w * dpr); strip.height = Math.round(h * dpr); }
+  const c = strip.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+  const bw = w / NB;
+  for (let i = 0; i < NB; i++) { if (!conc[i]) continue; const bh = (conc[i] / maxC) * (h - 6); c.fillStyle = i * BK < t ? "#ff4d5e" : "#5a3340"; c.fillRect(i * bw, h - bh, Math.max(bw, 1), bh); }
+  c.fillStyle = "#2a3346"; for (let d = 1; d < DAYS.length; d++) c.fillRect(d * W / TOTAL * w, 0, 1, h);
+  c.fillStyle = "#ffc24a"; c.fillRect(t / TOTAL * w - 1, 0, 2, h);
+}
+let dragging = false;
+const stripSeek = e => { const r = strip.getBoundingClientRect(); seek((e.clientX - r.left) / r.width * TOTAL); };
+strip.addEventListener("pointerdown", e => { dragging = true; strip.setPointerCapture(e.pointerId); stripSeek(e); });
+strip.addEventListener("pointermove", e => dragging && stripSeek(e));
+strip.addEventListener("pointerup", () => dragging = false);
+strip.addEventListener("keydown", e => { if (e.key === "ArrowRight") seek(t + 15); if (e.key === "ArrowLeft") seek(t - 15); });
+
+// heatmap: per barangay, union of its feeders' outage intervals (global minutes) so overlaps count once
+const BINT = {};
+for (const n in SERVED) {
+  const fs = new Set(SERVED[n].map(x => x.f));
+  const iv = events.filter(e => fs.has(e.f)).map(e => [e.gs, e.ge]).sort((a, b) => a[0] - b[0]), out = [];
+  for (const [s, e] of iv) { const l = out[out.length - 1]; if (l && s <= l[1]) l[1] = Math.max(l[1], e); else out.push([s, e]); }
+  BINT[n] = out;
+}
+const heatHours = (n, upTo = heatScope === "all" ? TOTAL : t) => (BINT[n] || []).reduce((a, [s, e]) => a + Math.max(0, Math.min(e, upTo) - s), 0) / 60;
+const HMAX = Math.max(...Object.keys(BINT).map(n => heatHours(n, TOTAL)));
+const RAMP = [[43,29,92],[123,42,140],[200,54,107],[242,107,58],[251,179,58],[255,242,122]];
+const rampColor = v => { v = Math.min(1, Math.max(0, v)) * (RAMP.length - 1); const i = Math.min(RAMP.length - 2, Math.floor(v)), f = v - i; return "rgb(" + RAMP[i].map((c, k) => Math.round(c + (RAMP[i + 1][k] - c) * f)).join(",") + ")"; };
+let mode = "live", heatScope = "all";
+const scopeLabel = () => heatScope === "all" ? "Aug 27 – Sep 15" : "up to " + fmtShort(DAYS[Math.min(DAYS.length - 1, Math.floor(t / W))]) + " " + fmtHM(T0 + t % W);
+function renderHeat() {
+  const hrs = {}; let mx = 0;
+  for (const n in layers) { hrs[n] = heatHours(n); mx = Math.max(mx, hrs[n]); }
+  const scale = heatScope === "all" ? HMAX : Math.max(HMAX * 0.25, mx); // fixed scale for the whole period, growing scale while scrubbing
+  for (const n in layers) {
+    const h = hrs[n], sel = selected && (SERVED[n] || []).some(x => x.f === selected);
+    const key = "h" + h.toFixed(2) + "|" + sel + "|" + scale.toFixed(1);
+    if (brgyState[n] === key) continue; brgyState[n] = key;
+    layers[n].setStyle(h > 0 ? {fillColor: rampColor(h / scale), fillOpacity: 0.72, color: sel ? "#5fd4ff" : "rgba(10,10,16,.55)", weight: sel ? 2.2 : 0.6}
+      : {fillOpacity: 0, color: sel ? "#5fd4ff" : "rgba(255,255,255,.3)", weight: sel ? 2.2 : 0.6});
+    if (sel) layers[n].bringToFront();
+  }
+  $("hwhen").textContent = scopeLabel();
+  $("hmid").textContent = (scale / 2).toFixed(0) + " h"; $("hmax").textContent = scale.toFixed(0) + " h";
+  const top = Object.entries(hrs).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  $("topwhen").textContent = heatScope === "all" ? "whole period" : "to playhead";
+  $("topb").innerHTML = top.length ? top.map(([n, h]) => `<div class="arow"><span title="${n}">${n}</span><div class="abar"><div style="width:${(h / top[0][1] * 100).toFixed(1)}%"></div></div><span class="n">${h.toFixed(1)}h</span></div>`).join("") : '<div class="empty">No outages yet.</div>';
+}
+function setMode(v) {
+  mode = v; for (const n in brgyState) delete brgyState[n];
+  $("hScope").hidden = v !== "heat"; $("hlegend").hidden = v !== "heat"; $("llegend").hidden = v === "heat"; $("topcard").hidden = v !== "heat";
+  $("map").classList.toggle("heat", v === "heat");
+  render();
+}
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => { document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x === b)); setMode(b.dataset.mode); });
+$("hScope").onchange = e => { heatScope = e.target.value; for (const n in brgyState) delete brgyState[n]; render(); };
+$("mStyle").onchange = e => { $("map").classList.toggle("mk-badge", e.target.value === "badge"); $("map").classList.toggle("mk-none", e.target.value === "none"); };
+
+// state + render
+let t = 0, playing = false, speed = 15, last = 0, selected = null, curOff = new Map();
+const totalHours = events.reduce((s, e) => s + (e.e - e.s), 0) / 60;
+const brgyState = {};
+function render() {
+  const di = Math.min(DAYS.length - 1, Math.floor(t / W)), m = T0 + (t - di * W), day = byDay[di];
+  $("dlab").textContent = fmtDate(DAYS[di]);
+  $("clock").textContent = fmtHM(m);
+  const started = day.filter(e => e.s <= m);
+  if (started.length) { const s = Math.round((m - Math.min(...started.map(e => e.s))) * 60); $("elapsed").textContent = [s / 3600, s / 60 % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, "0")).join(":"); }
+  else $("elapsed").textContent = "not started";
+  const active = day.filter(e => e.s <= m && m < e.e).sort((a, b) => a.s - b.s);
+  curOff = new Map(active.map(e => [e.f, e]));
+  $("dark").innerHTML = `${active.length}<small>/ ${FEEDERS.length}</small>`;
+  const lost = events.reduce((s, e) => s + Math.min(Math.max(t - e.gs, 0), e.ge - e.gs), 0) / 60;
+  $("lost").innerHTML = `${lost.toFixed(1)}<small>of ${totalHours.toFixed(1)}</small>`;
+  // feeders
+  for (const f of FEEDERS) {
+    const el = nodes[f].getElement(); if (!el) continue;
+    const e = curOff.get(f), prog = el.querySelector(".prog"), et = el.querySelector(".el");
+    el.classList.toggle("off", !!e); el.classList.toggle("sel", f === selected);
+    prog.setAttribute("stroke-dasharray", e ? `${((m - e.s) / (e.e - e.s) * CIRC).toFixed(1)} ${CIRC}` : `0 ${CIRC}`);
+    et.textContent = e ? fmtDur(m - e.s) : "";
+    el.querySelector(".bt").textContent = e ? fmtDur(m - e.s) : "";
+    el.querySelector(".bd i").style.width = e ? ((m - e.s) / (e.e - e.s) * 100).toFixed(1) + "%" : "0";
+    if (unknownRings[f]) unknownRings[f].setStyle({opacity: e ? 0.9 : 0});
+  }
+  // barangays: 2 = whole dark, 1 = part dark, 0 = on
+  let hit = 0, whole = 0;
+  for (const n in layers) {
+    const s = SERVED[n] || [];
+    let lvl = 0; for (const x of s) if (curOff.has(x.f)) lvl = Math.max(lvl, x.whole ? 2 : 1);
+    const sel = selected && s.some(x => x.f === selected);
+    if (lvl) { hit++; if (lvl === 2) whole++; }
+    if (mode === "heat") continue;
+    const key = lvl + "|" + sel;
+    if (brgyState[n] === key) continue; brgyState[n] = key;
+    const st = lvl === 2 ? {fillColor: "#03040a", fillOpacity: 0.78, color: "#ff4d5e", weight: 1.6}
+      : lvl === 1 ? {fillColor: "#120a10", fillOpacity: 0.5, color: "#ff4d5e", weight: 0.9}
+      : {fillColor: "#ffc24a", fillOpacity: s.length ? 0.13 : 0, color: "rgba(255,255,255,.28)", weight: 0.7};
+    if (sel) Object.assign(st, {color: "#5fd4ff", weight: 2.2});
+    layers[n].setStyle(st);
+    if (sel) layers[n].bringToFront();
+  }
+  if (mode === "heat") renderHeat();
+  $("brgy").innerHTML = `${hit}<small>${whole} whole</small>`;
+  $("ocount").textContent = active.length;
+  $("log").innerHTML = active.length ? active.map(e => `<div class="row" data-f="${e.f}"><div class="t"><b>${e.f}</b><em>${fmtDur(m - e.s)}</em></div><div class="bar"><div style="width:${((m - e.s) / (e.e - e.s) * 100).toFixed(1)}%"></div></div><div class="m">off ${fmtHM(e.s)} · back ${fmtHM(e.e)} · ${fmtDur(e.e - m)} left · ${FD[e.f].b.length || "?"} brgy</div></div>`).join("")
+    : `<div class="empty">${m < Math.min(...day.map(e => e.s)) ? "All feeders on. Load dropping has not started yet today." : "All feeders restored for today."}</div>`;
+  const al = SUBS.map(a => [a, events.filter(e => SUB_OF(e.f) === a).reduce((s, e) => s + Math.min(Math.max(t - e.gs, 0), e.ge - e.gs), 0) / 60]).sort((x, y) => y[1] - x[1]);
+  const amax = Math.max(1, al[0][1]);
+  $("areas").innerHTML = al.map(([a, h]) => `<div class="arow"><span>${a}</span><div class="abar"><div style="width:${(h / amax * 100).toFixed(1)}%"></div></div><span class="n">${h.toFixed(1)}h</span></div>`).join("");
+  chips.forEach((c, i) => c.setAttribute("aria-pressed", i === di));
+  if (selected) renderDetail(di, m);
+  drawStrip(t);
+}
+$("log").addEventListener("click", e => { const r = e.target.closest(".row"); if (r) { select(r.dataset.f); map.panTo(FD[r.dataset.f].p); } });
+function select(f) { selected = f; for (const n in brgyState) delete brgyState[n]; render(); }
+const CONF = {high: "Coverage: MORE Power feeder graphic", med: "Coverage: older advisory", low: "Coverage: old or partial notice", none: "No barangay list found"};
+function renderDetail(di, m) {
+  const v = FD[selected], list = events.filter(e => e.f === selected), hrs = list.reduce((s, e) => s + e.e - e.s, 0) / 60;
+  const cur = list.find(e => e.di === di && e.s <= m && m < e.e);
+  const br = v.b.map(b => b.endsWith("*") ? `<b>${b.slice(0, -1)}</b>` : b).join(", ");
+  $("detail").innerHTML = `<h2>${selected} <span>${SUB_OF(selected)} substation</span></h2>
+  <dl class="kv"><dt>Status</dt><dd style="color:${cur ? "var(--dark)" : "var(--lit)"}">${cur ? "Dark for " + fmtDur(m - cur.s) + " · back " + fmtHM(cur.e) : "Online"}</dd><dt>Outages</dt><dd>${list.length} · ${hrs.toFixed(1)} h total</dd><dt>Average</dt><dd>${list.length ? fmtDur(hrs * 60 / list.length) : "—"}</dd></dl>
+  <span class="conf ${v.c}">${CONF[v.c]}</span>${v.d ? ` <span style="font-size:11px;color:var(--muted)">${v.d}</span>` : ""}
+  <div class="brgys">${v.b.length ? `<span style="color:var(--muted)">Serves (<b>bold</b> = whole barangay):</span> ${br}` : "Service area not published in the sources found."}</div>
+  <ul>${list.map(e => `<li class="${e === cur ? "now" : ""}">${fmtShort(e.d).padEnd(7)} ${fmtHM(e.s)}–${fmtHM(e.e)} · ${fmtDur(e.e - e.s)}</li>`).join("")}</ul>`;
+}
+function seek(v) { t = Math.min(TOTAL - 0.01, Math.max(0, v)); render(); }
+function tick(ts) {
+  if (!playing) return;
+  const dt = last ? Math.min(0.25, (ts - last) / 1000) : 0; last = ts;
+  t += dt * speed;
+  if (t >= TOTAL - 0.01) { t = TOTAL - 0.01; setPlay(false); }
+  render(); requestAnimationFrame(tick);
+}
+function setPlay(p) { playing = p; last = 0; $("play").textContent = p ? "❚❚ Pause" : "▶ Play"; if (p) { if (t >= TOTAL - 0.02) t = 0; requestAnimationFrame(tick); } }
+$("play").onclick = () => setPlay(!playing);
+$("back").onclick = () => seek(t - 30);
+$("fwd").onclick = () => seek(t + 30);
+$("speed").onchange = e => speed = +e.target.value;
+document.addEventListener("keydown", e => { if (e.code === "Space" && !/BUTTON|SELECT|INPUT/.test(e.target.tagName) && !e.target.closest(".leaflet-container")) { e.preventDefault(); setPlay(!playing); } });
+window.addEventListener("resize", () => drawStrip(t));
+// at city-wide zoom, only dropped or selected feeders keep their name tag
+const zoomTags = () => $("map").classList.toggle("lowz", map.getZoom() < 14.75);
+map.on("zoomend", zoomTags); zoomTags();
+map.on("zoomend moveend", () => render());
+// open in a working state: Sep 11 at the evening peak
+seek(DAYS.indexOf("2026-09-11") * W + (1149 - T0));
+select("Diversion Feeder 3");
+</script>

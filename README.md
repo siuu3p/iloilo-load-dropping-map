@@ -1,0 +1,39 @@
+# Iloilo City Manual Load Dropping Map
+
+Interactive replay of MORE Power's manual load dropping in Iloilo City, Aug 27 – Sep 15, 2026.
+
+- 197 outages across 31 feeders, from MORE Power's posts on its official Facebook page
+- Satellite map with all 180 barangays shaded by which feeders serve them
+- Live replay: feeders go dark on the clock, with elapsed time per feeder
+- Heatmap: hours each barangay had a feeder dark, for the whole period or up to the playhead
+
+Open `blackout-map.html` in a browser. It is a single self-contained file (about 3 MB, imagery included).
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `blackout-map.html` | Built page. Do not edit by hand. |
+| `feeder-coverage.json` | Barangays per feeder, substation sites, source and confidence for each. |
+| `src/template2.html` | Page source: layout, styles, replay and heatmap code. |
+| `src/events.json` | Outages as `[date, feeder, offline minute, online minute]`. |
+| `src/geo.json` | Barangay boundaries plus feeder coverage and marker positions. |
+| `src/base.jpg` | Satellite base image with roads and labels. |
+| `src/leaflet.css` | Leaflet 1.9.4 stylesheet, inlined at build time. |
+| `src/build.py` | Puts the pieces together into `blackout-map.html`. |
+
+## Rebuild
+
+```bash
+python src/build.py
+```
+
+## Data sources and limits
+
+- **Outage times:** MORE Power's manual load dropping posts on Facebook, compiled in a workbook. One fix: Molo Feeder 3 on Aug 27 is logged as 3:21 AM, but the day's tab and duration show 3:21 PM.
+- **Feeder coverage:** MORE Power's feeder coverage graphics (Aug 2025, updated Apr 2026) for 24 feeders. Three feeders use older notices. Diversion F2, Megaworld F2, Mobile F4 and Mandurriao F3 have no published barangay list. Most lists name only part of a barangay, so shaded areas and heatmap hours are upper estimates.
+- **Substations:** OpenStreetMap. Arevalo (So-oc) and the Mobile unit (placed at Mandurriao) are approximate.
+- **Barangay boundaries:** PSA/NAMRIA, via faeldon/philippines-json-maps.
+- **Imagery:** Sentinel-2 cloudless 2024 by EOX IT Services GmbH, from modified Copernicus Sentinel data, licensed CC BY-NC-SA 4.0 (non-commercial). Roads and place labels © Esri.
+
+Because of the imagery license, this project is for non-commercial use.
