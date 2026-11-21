@@ -42,6 +42,28 @@ python src/build.py
 
 The importer rewrites `src/events.json`. When an offline time does not match the online time minus the duration, it trusts the online time and duration and prints the row. It also flags feeders missing from `src/geo.json`. The subtitle, date range and headline update on their own. The meta description, Open Graph text, `og.jpg` and the About notes do not, so edit those in `src/template2.html` by hand.
 
+## Live volunteer feed (Google Sheet)
+
+Volunteers can add outages without a rebuild. The page reads a published Google Sheet when it loads and merges it with the built-in data.
+
+1. Make a Google Form with four questions: **Date**, **Feeder**, **Time off**, **Time on**. Use the Date and Time question types. Leave Time on blank while the outage is still going.
+2. Link the form to a sheet. In the sheet, choose File > Share > Publish to web, pick the responses tab, choose CSV, and copy the link.
+3. Paste the link into `const SHEET_CSV = "";` in `src/template2.html`, then run `python src/build.py`.
+
+How rows are read:
+
+- Columns are found by header name. Other columns, such as the form's Timestamp, are ignored.
+- Dates can be `2026-09-16` or `9/16/2026` (month first). Times can be `15:21` or `3:21 PM`.
+- Feeder names must match a feeder in `src/geo.json`, ignoring case. `Molo F3` is read as `Molo Feeder 3`.
+- A row with the same date, feeder and time off as a built-in outage replaces it. Use this to fix an end time.
+- A row with no Time on, dated today, shows as ongoing until the page loads again.
+- Bad rows are skipped and logged in the browser console.
+- If the sheet can't be reached, the page uses only the built-in data.
+
+The page checks the sheet every 5 minutes. When it changes, a **New outage reports · Reload** button appears.
+
+Anyone with the form link can submit, so share it only with trusted volunteers and check the responses. Deleting a row in the sheet removes it from the map.
+
 ## Languages
 
 The page has an English / Hiligaynon toggle. Labels live in the `HIL` table in `src/template2.html`; the About section stays in English. The Hiligaynon text is a draft and needs a native speaker's check.
