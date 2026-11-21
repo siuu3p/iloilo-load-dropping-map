@@ -7,20 +7,22 @@ Interactive replay of MORE Power's manual load dropping in Iloilo City, Aug 27 â
 - Live replay: feeders go dark on the clock, with elapsed time per feeder
 - Heatmap: hours each barangay had a feeder dark, for the whole period or up to the playhead
 
-Open `blackout-map.html` in a browser. It is a single self-contained file (about 3 MB, imagery included).
+Open `index.html` in a browser. It is a single self-contained file (about 2.7 MB, imagery and Leaflet included) and works offline except for web fonts.
+
+Search for a barangay above the map. The URL hash keeps the time, feeder, barangay and view, so a copied link opens the same state.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `blackout-map.html` | Built page. Do not edit by hand. |
+| `index.html` | Built page. Do not edit by hand. |
 | `feeder-coverage.json` | Barangays per feeder, substation sites, source and confidence for each. |
 | `src/template2.html` | Page source: layout, styles, replay and heatmap code. |
 | `src/events.json` | Outages as `[date, feeder, offline minute, online minute]`. |
 | `src/geo.json` | Barangay boundaries plus feeder coverage and marker positions. |
-| `src/base.jpg` | Satellite base image with roads and labels. |
-| `src/leaflet.css` | Leaflet 1.9.4 stylesheet, inlined at build time. |
-| `src/build.py` | Puts the pieces together into `blackout-map.html`. |
+| `src/base.webp` | Satellite base image with roads and labels (WebP, quality 75). |
+| `src/leaflet.css`, `src/leaflet.js` | Leaflet 1.9.4 from cdnjs, inlined at build time. |
+| `src/build.py` | Puts the pieces together into `index.html`. |
 
 ## Rebuild
 
