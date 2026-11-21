@@ -23,12 +23,28 @@ Search for a barangay above the map. The URL hash keeps the time, feeder, barang
 | `src/base.webp` | Satellite base image with roads and labels (WebP, quality 75). |
 | `src/leaflet.css`, `src/leaflet.js` | Leaflet 1.9.4 from cdnjs, inlined at build time. |
 | `src/build.py` | Puts the pieces together into `index.html`. |
+| `src/import_workbook.py` | Rebuilds `src/events.json` from the workbook's Combined Data tab. Standard library only. |
 
 ## Rebuild
 
 ```bash
 python src/build.py
 ```
+
+## Add new outages
+
+Update the workbook's Combined Data tab, then:
+
+```bash
+python src/import_workbook.py "Manual Load Dropping in Iloilo City.xlsx"
+python src/build.py
+```
+
+The importer rewrites `src/events.json`. When an offline time does not match the online time minus the duration, it trusts the online time and duration and prints the row. It also flags feeders missing from `src/geo.json`. The subtitle, date range and headline update on their own. The meta description, Open Graph text, `og.jpg` and the About notes do not, so edit those in `src/template2.html` by hand.
+
+## Languages
+
+The page has an English / Hiligaynon toggle. Labels live in the `HIL` table in `src/template2.html`; the About section stays in English. The Hiligaynon text is a draft and needs a native speaker's check.
 
 ## Data sources and limits
 

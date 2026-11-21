@@ -58,7 +58,12 @@ h1{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:.02e
 .about p,.about li{font-size:13px;line-height:1.6;color:#aab3c4;margin:0 0 6px}
 .about ul{margin:0;padding-left:18px}
 .about li{margin:0 0 4px}
-.credit{margin:16px 0 0;font-size:12px;color:var(--muted)}
+.credit{border-top:1px solid var(--line);margin:4px 0 0;padding-top:14px;font-size:12px;color:var(--muted)}
+.hrow{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
+#lang{font-size:12px;padding:5px 10px}
+.lede{margin:6px 0 0;font-size:15px;color:var(--fg)}
+.lede b{color:var(--lit);font-weight:600}
+.linkbtn{min-height:0!important;background:none;border:0;padding:0;font:inherit;color:var(--lit);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .credit a{color:var(--fg)}
 @media (max-width:700px){.transport{grid-template-columns:1fr}}
 .board{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -104,7 +109,7 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
 .side{display:grid;gap:14px;align-content:start;min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
 .card h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.03em;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px}
-.card h2 span{color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:400;text-align:right}
+.card h2 span:not(.lt){color:var(--muted);font-family:var(--mono);font-size:12px;font-weight:400;text-align:right}
 .log{display:grid;gap:8px;max-height:300px;overflow:auto}
 .row{display:grid;gap:4px;cursor:pointer;width:100%;text-align:left;background:none;border:0;padding:0;font:inherit;color:inherit}
 .row>span,.bar>span{display:block}
@@ -165,16 +170,17 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
 
 <div class="wrap">
   <header class="head">
-    <h1>Iloilo City Manual Load Dropping</h1>
-    <p class="sub">31 feeders · 197 outages · Aug 27 – Sep 15, 2026 · Source: MORE Power’s Facebook posts</p>
+    <div class="hrow"><h1 data-t="Iloilo City Manual Load Dropping">Iloilo City Manual Load Dropping</h1><button type="button" id="lang" lang="hil">Hiligaynon</button></div>
+    <p class="sub" id="sub">31 feeders · 197 outages · Aug 27 – Sep 15, 2026 · Source: MORE Power’s Facebook posts</p>
+    <p class="lede" id="lede"></p>
   </header>
 
   <div class="board">
     <div class="cell"><div class="lab" id="dlab">Date</div><div class="val" id="clock">11:00</div></div>
-    <div class="cell"><div class="lab">Elapsed since first drop today</div><div class="val" id="elapsed">00:00:00</div></div>
-    <div class="cell"><div class="lab">Feeders dark now</div><div class="val red" id="dark">0<small>/ 31</small></div></div>
-    <div class="cell"><div class="lab">Barangays hit now</div><div class="val red" id="brgy">0<small>/ 180</small></div></div>
-    <div class="cell"><div class="lab">Feeder-hours lost so far</div><div class="val" id="lost">0.0<small>of 437.1</small></div></div>
+    <div class="cell"><div class="lab" data-t="Elapsed since first drop today">Elapsed since first drop today</div><div class="val" id="elapsed">00:00:00</div></div>
+    <div class="cell"><div class="lab" data-t="Feeders dark now">Feeders dark now</div><div class="val red" id="dark">0<small>/ 31</small></div></div>
+    <div class="cell"><div class="lab" data-t="Barangays hit now">Barangays hit now</div><div class="val red" id="brgy">0<small>/ 180</small></div></div>
+    <div class="cell"><div class="lab" data-t="Feeder-hours lost so far">Feeder-hours lost so far</div><div class="val" id="lost">0.0<small>of 437.1</small></div></div>
   </div>
 
   <section class="transport" aria-label="Playback">
@@ -191,7 +197,7 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
     </div>
     <div class="tstrip">
       <canvas class="strip" id="strip" tabindex="0" aria-label="Timeline. Bar height is feeders dark at once. Drag, or use left and right arrow keys."></canvas>
-      <div class="striplab"><span>Feeders dark at once</span><span id="peak"></span></div>
+      <div class="striplab"><span data-t="Feeders dark at once">Feeders dark at once</span><span id="peak"></span></div>
     </div>
     <div class="days" id="days" aria-label="Jump to day"></div>
   </section>
@@ -204,8 +210,8 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
           <button type="button" data-mode="live" aria-pressed="true">Live</button>
           <button type="button" data-mode="heat" aria-pressed="false">Heatmap</button>
         </div>
-        <select id="hScope" hidden aria-label="Heatmap period"><option value="all">Whole period</option><option value="now">Up to playhead</option></select>
-        <input id="q" type="search" list="bl" placeholder="Find barangay" aria-label="Find barangay" autocomplete="off"><datalist id="bl"></datalist>
+        <select id="hScope" hidden aria-label="Heatmap period"><option value="all" data-t="Whole period">Whole period</option><option value="now" data-t="Up to playhead">Up to playhead</option></select>
+        <input id="q" type="search" list="bl" placeholder="Find barangay" aria-label="Find barangay" data-tp="Find barangay" autocomplete="off"><datalist id="bl"></datalist>
         <span class="grow"></span>
         <select id="mStyle" aria-label="Feeder marker style"><option value="badge" selected>Badges</option><option value="ring">Rings</option><option value="none">No markers</option></select>
         <button id="tSS" type="button" aria-pressed="true">Substations</button>
@@ -213,22 +219,22 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
       </div>
       <div id="map" class="mk-badge" role="region" aria-label="Satellite map of Iloilo City with feeder outages"></div>
       <div class="legend hlegend" id="hlegend" hidden>
-        <span>Hours with power out <b id="hwhen"></b></span>
+        <span><span data-t="Hours with power out">Hours with power out</span> <b id="hwhen"></b></span>
         <span class="ramp"><i class="grad"></i><span class="ticks"><span>0</span><span id="hmid"></span><span id="hmax"></span></span></span>
-        <span><i style="background:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)"></i>No feeder listing / no outage</span>
+        <span><i style="background:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)"></i><span data-t="No feeder listing / no outage">No feeder listing / no outage</span></span>
       </div>
       <div class="legend" id="llegend">
-        <span><i style="background:rgba(255,194,74,.45)"></i>Served, power on</span>
-        <span><i style="background:#06070b;box-shadow:inset 0 0 0 2px #ff4d5e"></i>Whole barangay dark</span>
-        <span><i style="background:#2a1b22;box-shadow:inset 0 0 0 1px #ff4d5e"></i>Part of barangay dark</span>
-        <span><i style="border:2px dashed #ff4d5e;background:none;border-radius:50%"></i>Feeder area unknown</span>
+        <span><i style="background:rgba(255,194,74,.45)"></i><span data-t="Served, power on">Served, power on</span></span>
+        <span><i style="background:#06070b;box-shadow:inset 0 0 0 2px #ff4d5e"></i><span data-t="Whole barangay dark">Whole barangay dark</span></span>
+        <span><i style="background:#2a1b22;box-shadow:inset 0 0 0 1px #ff4d5e"></i><span data-t="Part of barangay dark">Part of barangay dark</span></span>
+        <span><i style="border:2px dashed #ff4d5e;background:none;border-radius:50%"></i><span data-t="Feeder area unknown">Feeder area unknown</span></span>
       </div>
     </div>
     <div class="side">
-      <div class="card"><h2>Offline now <span id="ocount">0</span></h2><div class="log" id="log"></div></div>
-      <div class="card" id="detail"><h2>Feeder detail <span>tap a feeder</span></h2><div class="empty">Select a feeder on the map or in the list.</div></div>
-      <div class="card" id="topcard" hidden><h2>Most hours by barangay <span id="topwhen"></span></h2><div class="areas" id="topb"></div></div>
-      <div class="card"><h2>Hours lost by substation <span>to date</span></h2><div class="areas" id="areas"></div></div>
+      <div class="card"><h2><span class="lt" data-t="Offline now">Offline now</span> <span id="ocount">0</span></h2><div class="log" id="log"></div></div>
+      <div class="card" id="detail"><h2><span class="lt" data-t="Feeder detail">Feeder detail</span> <span data-t="tap a feeder">tap a feeder</span></h2><div class="empty" data-t="Select a feeder on the map or in the list.">Select a feeder on the map or in the list.</div></div>
+      <div class="card" id="topcard" hidden><h2><span class="lt" data-t="Most hours by barangay">Most hours by barangay</span> <span id="topwhen"></span></h2><div class="areas" id="topb"></div></div>
+      <div class="card"><h2><span class="lt" data-t="Hours lost by substation">Hours lost by substation</span> <span data-t="to date">to date</span></h2><div class="areas" id="areas"></div></div>
     </div>
   </div>
 
@@ -256,6 +262,7 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
         <h3>Heatmap</h3>
         <p>Hours a barangay had at least one of its feeders dark. If two of its feeders were down at once, that time counts once.</p>
         <p>Because coverage is often partial, these hours are an upper estimate for any one household.</p>
+        <p><button type="button" class="linkbtn" id="csv">Download hours per barangay (CSV)</button></p>
       </div>
       <div>
         <h3>Map and locations</h3>
@@ -267,8 +274,8 @@ button:focus-visible,select:focus-visible,.strip:focus-visible{outline:2px solid
         </ul>
       </div>
     </div>
-    <p class="credit">Built by <a href="https://github.com/siuu3p" target="_blank" rel="noopener noreferrer">siuu3p</a></p>
   </section>
+  <footer class="credit">Built by <a href="https://github.com/siuu3p" target="_blank" rel="noopener noreferrer">siuu3p</a></footer>
 </div>
 
 <script>__LEAFLETJS__</script>
@@ -290,8 +297,62 @@ const fmtHM = m => String(Math.floor(m / 60) % 24).padStart(2, "0") + ":" + Stri
 const fmtDur = m => { m = Math.max(0, m); const h = Math.floor(m / 60), mm = Math.floor(m % 60); return h ? `${h}h ${String(mm).padStart(2, "0")}m` : `${mm}m`; };
 const fmtDate = d => new Date(d + "T00:00:00").toLocaleDateString("en-US", {weekday: "short", month: "short", day: "numeric"});
 const fmtShort = d => new Date(d + "T00:00:00").toLocaleDateString("en-US", {month: "short", day: "numeric"});
+const RANGE = fmtShort(DAYS[0]) + " – " + fmtShort(DAYS.at(-1));
 const shortName = f => SUB_OF(f).replace("Mandurriao", "Mand.").replace("Megaworld", "Mega").replace("Diversion", "Div.") + " " + f.match(/\d+$/)[0];
 const $ = id => document.getElementById(id);
+// Hiligaynon labels (draft: needs a native speaker's check). Keys are the English text; data-t / data-tp in the markup point here.
+const HIL = {
+  "Iloilo City Manual Load Dropping": "Manual Load Dropping sa Iloilo City",
+  "Elapsed since first drop today": "Kadugayon halin sa una nga brownout subong",
+  "Feeders dark now": "Feeder nga wala kuryente subong",
+  "Barangays hit now": "Barangay nga apektado subong",
+  "Feeder-hours lost so far": "Feeder-hours nga nadula tubtob subong",
+  "Feeders dark at once": "Feeder nga dungan wala kuryente",
+  "Whole period": "Bug-os nga panahon",
+  "Up to playhead": "Tubtob sa ginatan-aw nga oras",
+  "Find barangay": "Pangita barangay",
+  "Hours with power out": "Oras nga wala kuryente",
+  "No feeder listing / no outage": "Wala listahan sang feeder / wala brownout",
+  "Served, power on": "May kuryente",
+  "Whole barangay dark": "Bug-os nga barangay wala kuryente",
+  "Part of barangay dark": "Bahin sang barangay wala kuryente",
+  "Feeder area unknown": "Wala mahibal-i ang sakop sang feeder",
+  "Offline now": "Wala kuryente subong",
+  "Feeder detail": "Detalye sang feeder",
+  "tap a feeder": "pindota ang feeder",
+  "Select a feeder on the map or in the list.": "Magpili sang feeder sa mapa ukon sa listahan.",
+  "Most hours by barangay": "Pinakadamo nga oras kada barangay",
+  "Hours lost by substation": "Oras nga nadula kada substation",
+  "to date": "tubtob subong",
+  "whole period": "bug-os nga panahon",
+  "to playhead": "tubtob sa ginatan-aw",
+  "No outages yet.": "Wala pa brownout.",
+  "not started": "wala pa nagsugod",
+  "All feeders on. Load dropping has not started yet today.": "May kuryente ang tanan nga feeder. Wala pa nagsugod ang load dropping subong nga adlaw.",
+  "All feeders restored for today.": "Nabalik na ang kuryente sang tanan nga feeder subong nga adlaw.",
+  "Status": "Kahimtangan",
+  "Dark for": "Wala kuryente sa sulod sang",
+  "back": "balik",
+  "Online": "May kuryente",
+  "Outages": "Brownout",
+  "Serves (<b>bold</b> = whole barangay):": "Ginaserbisyuhan (<b>bold</b> = bug-os nga barangay):",
+  "Service area not published in the sources found.": "Wala gin-publish ang sakop sini sa mga source nga nakit-an.",
+  "Coverage: MORE Power feeder graphic": "Sakop: feeder graphic sang MORE Power",
+  "Coverage: older advisory": "Sakop: daan nga advisory",
+  "Coverage: old or partial notice": "Sakop: daan ukon kulang nga abiso",
+  "No barangay list found": "Wala listahan sang barangay",
+  "Feeders": "Mga feeder",
+  "whole": "bug-os",
+  "dark": "wala kuryente",
+  "h without power": "ka oras nga wala kuryente",
+  "No feeder listing found": "Wala listahan sang feeder",
+  "up to": "tubtob",
+  "feeders": "feeder",
+  "outages": "brownout",
+  "Source: MORE Power’s Facebook posts": "Halin sa: mga post sang MORE Power sa Facebook",
+};
+let lang = "en";
+const tr = s => lang === "hil" && HIL[s] || s;
 
 // barangay -> feeders serving it
 const SERVED = {};
@@ -310,9 +371,9 @@ L.geoJSON(GEO.bg, {
 }).addTo(map);
 function brgyTip(n) {
   const s = SERVED[n] || [];
-  if (mode === "heat") return `<b>${n}</b><br>${s.length ? `${heatHours(n).toFixed(1)} h without power ${scopeLabel()}<br><span style="color:#8a94a8">${s.length} feeder${s.length > 1 ? "s" : ""}: ${s.map(x => shortName(x.f)).join(", ")}</span>` : '<span style="color:#8a94a8">No feeder listing found</span>'}`;
-  const on = s.map(x => `${shortName(x.f)}${x.whole ? " (whole)" : ""}${curOff.has(x.f) ? ' <b style="color:#ff6b79">dark</b>' : ""}`);
-  return `<b>${n}</b><br>${s.length ? "Feeders: " + on.join(", ") + `<br><span style="color:#8a94a8">${heatHours(n, TOTAL).toFixed(1)} h without power, Aug 27 – Sep 15</span>` : '<span style="color:#8a94a8">No feeder listing found</span>'}`;
+  if (mode === "heat") return `<b>${n}</b><br>${s.length ? `${heatHours(n).toFixed(1)} ${tr("h without power")} ${scopeLabel()}<br><span style="color:#8a94a8">${s.length} feeder${s.length > 1 ? "s" : ""}: ${s.map(x => shortName(x.f)).join(", ")}</span>` : `<span style="color:#8a94a8">${tr("No feeder listing found")}</span>`}`;
+  const on = s.map(x => `${shortName(x.f)}${x.whole ? ` (${tr("whole")})` : ""}${curOff.has(x.f) ? ` <b style="color:#ff6b79">${tr("dark")}</b>` : ""}`);
+  return `<b>${n}</b><br>${s.length ? tr("Feeders") + ": " + on.join(", ") + `<br><span style="color:#8a94a8">${heatHours(n, TOTAL).toFixed(1)} ${tr("h without power")}, ${RANGE}</span>` : `<span style="color:#8a94a8">${tr("No feeder listing found")}</span>`}`;
 }
 // substations
 const ssLayer = L.layerGroup().addTo(map);
@@ -374,7 +435,7 @@ const HMAX = Math.max(...Object.keys(BINT).map(n => heatHours(n, TOTAL)));
 const RAMP = [[43,29,92],[123,42,140],[200,54,107],[242,107,58],[251,179,58],[255,242,122]];
 const rampColor = v => { v = Math.min(1, Math.max(0, v)) * (RAMP.length - 1); const i = Math.min(RAMP.length - 2, Math.floor(v)), f = v - i; return "rgb(" + RAMP[i].map((c, k) => Math.round(c + (RAMP[i + 1][k] - c) * f)).join(",") + ")"; };
 let mode = "live", heatScope = "all";
-const scopeLabel = () => heatScope === "all" ? "Aug 27 – Sep 15" : "up to " + fmtShort(DAYS[Math.min(DAYS.length - 1, Math.floor(t / W))]) + " " + fmtHM(T0 + t % W);
+const scopeLabel = () => heatScope === "all" ? RANGE : tr("up to") + " " + fmtShort(DAYS[Math.min(DAYS.length - 1, Math.floor(t / W))]) + " " + fmtHM(T0 + t % W);
 function renderHeat() {
   const hrs = {}; let mx = 0;
   for (const n in layers) { hrs[n] = heatHours(n); mx = Math.max(mx, hrs[n]); }
@@ -390,8 +451,8 @@ function renderHeat() {
   $("hwhen").textContent = scopeLabel();
   $("hmid").textContent = (scale / 2).toFixed(0) + " h"; $("hmax").textContent = scale.toFixed(0) + " h";
   const top = Object.entries(hrs).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  $("topwhen").textContent = heatScope === "all" ? "whole period" : "to playhead";
-  $("topb").innerHTML = top.length ? top.map(([n, h]) => `<div class="arow"><span title="${n}">${n}</span><div class="abar"><div style="width:${(h / top[0][1] * 100).toFixed(1)}%"></div></div><span class="n">${h.toFixed(1)}h</span></div>`).join("") : '<div class="empty">No outages yet.</div>';
+  $("topwhen").textContent = tr(heatScope === "all" ? "whole period" : "to playhead");
+  $("topb").innerHTML = top.length ? top.map(([n, h]) => `<div class="arow"><span title="${n}">${n}</span><div class="abar"><div style="width:${(h / top[0][1] * 100).toFixed(1)}%"></div></div><span class="n">${h.toFixed(1)}h</span></div>`).join("") : `<div class="empty">${tr("No outages yet.")}</div>`;
 }
 function setMode(v) {
   mode = v; for (const n in brgyState) delete brgyState[n];
@@ -413,7 +474,7 @@ function render() {
   $("clock").textContent = fmtHM(m);
   const started = day.filter(e => e.s <= m);
   if (started.length) { const s = Math.round((m - Math.min(...started.map(e => e.s))) * 60); $("elapsed").textContent = [s / 3600, s / 60 % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, "0")).join(":"); }
-  else $("elapsed").textContent = "not started";
+  else $("elapsed").textContent = tr("not started");
   const active = day.filter(e => e.s <= m && m < e.e).sort((a, b) => a.s - b.s);
   curOff = new Map(active.map(e => [e.f, e]));
   $("dark").innerHTML = `${active.length}<small>/ ${FEEDERS.length}</small>`;
@@ -448,10 +509,10 @@ function render() {
     if (sel) layers[n].bringToFront();
   }
   if (mode === "heat") renderHeat();
-  $("brgy").innerHTML = `${hit}<small>${whole} whole</small>`;
+  $("brgy").innerHTML = `${hit}<small>${whole} ${tr("whole")}</small>`;
   $("ocount").textContent = active.length;
   $("log").innerHTML = active.length ? active.map(e => `<button type="button" class="row" data-f="${e.f}"><span class="t"><b>${e.f}</b><em>${fmtDur(m - e.s)}</em></span><span class="bar"><span style="width:${((m - e.s) / (e.e - e.s) * 100).toFixed(1)}%"></span></span><span class="m">off ${fmtHM(e.s)} · back ${fmtHM(e.e)} · ${fmtDur(e.e - m)} left · ${FD[e.f].b.length || "?"} brgy</span></button>`).join("")
-    : `<div class="empty">${m < Math.min(...day.map(e => e.s)) ? "All feeders on. Load dropping has not started yet today." : "All feeders restored for today."}</div>`;
+    : `<div class="empty">${m < Math.min(...day.map(e => e.s)) ? tr("All feeders on. Load dropping has not started yet today.") : tr("All feeders restored for today.")}</div>`;
   const al = SUBS.map(a => [a, events.filter(e => SUB_OF(e.f) === a).reduce((s, e) => s + Math.min(Math.max(t - e.gs, 0), e.ge - e.gs), 0) / 60]).sort((x, y) => y[1] - x[1]);
   const amax = Math.max(1, al[0][1]);
   $("areas").innerHTML = al.map(([a, h]) => `<div class="arow"><span>${a}</span><div class="abar"><div style="width:${(h / amax * 100).toFixed(1)}%"></div></div><span class="n">${h.toFixed(1)}h</span></div>`).join("");
@@ -465,7 +526,7 @@ let hashT;
 function saveHash() {
   clearTimeout(hashT);
   hashT = setTimeout(() => {
-    const p = {t: Math.round(t)}; if (selected) p.f = selected; if (mode === "heat") p.v = "heat"; if (pick) p.b = pick;
+    const p = {t: Math.round(t)}; if (selected) p.f = selected; if (mode === "heat") p.v = "heat"; if (pick) p.b = pick; if (lang === "hil") p.l = "hil";
     try { history.replaceState(null, "", "#" + new URLSearchParams(p)); } catch {}
   }, 400);
 }
@@ -483,6 +544,39 @@ $("q").addEventListener("change", e => {
   if (n) e.target.value = n;
   pickBrgy(n || null);
 });
+// subtitle from the data, so a re-import keeps it current
+const setSub = () => $("sub").textContent = `${FEEDERS.length} ${tr("feeders")} · ${events.length} ${tr("outages")} · ${RANGE}, ${DAYS[0].slice(0, 4)} · ${tr("Source: MORE Power’s Facebook posts")}`;
+// headline: hardest-hit barangay over the whole period
+const SPAN = (new Date(DAYS.at(-1)) - new Date(DAYS[0])) / 864e5 + 1;
+const TOPB = Object.keys(BINT).sort((a, b) => heatHours(b, TOTAL) - heatHours(a, TOTAL))[0];
+function setLede() {
+  const b = `<button type="button" class="linkbtn" id="topq">${TOPB}</button>`, h = HMAX.toFixed(1);
+  $("lede").innerHTML = lang === "hil" ? `Pinakaapektado: ${b}, tubtob <b>${h} ka oras</b> nga wala kuryente sa sulod sang ${SPAN} ka adlaw.`
+    : `Hardest hit: ${b}, up to <b>${h} hours</b> without power in ${SPAN} days.`;
+  $("topq").onclick = () => { $("q").value = TOPB; pickBrgy(TOPB); $("map").scrollIntoView({behavior: "smooth", block: "center"}); };
+}
+// language toggle: remembered per viewer, and carried in shared links
+function setLang(l) {
+  lang = l === "hil" ? "hil" : "en";
+  try { localStorage.setItem("lang", lang); } catch {}
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el => el.textContent = tr(el.dataset.t));
+  document.querySelectorAll("[data-tp]").forEach(el => el.placeholder = tr(el.dataset.tp));
+  $("lang").textContent = lang === "hil" ? "English" : "Hiligaynon"; $("lang").lang = lang === "hil" ? "en" : "hil";
+  for (const n in brgyState) delete brgyState[n];
+  setSub(); setLede(); render();
+}
+$("lang").onclick = () => setLang(lang === "hil" ? "en" : "hil");
+// CSV of whole-period hours per barangay
+$("csv").onclick = () => {
+  const q = v => `"${String(v).replace(/"/g, '""')}"`;
+  const rows = BNAMES.map(n => { const s = SERVED[n] || []; return [n, s.map(x => x.f + (x.whole ? " (whole)" : "")).join("; "), s.length ? heatHours(n, TOTAL).toFixed(1) : ""]; })
+    .sort((a, b) => (+b[2] || -1) - (+a[2] || -1));
+  const csv = "﻿" + [["barangay", "feeders", "hours_without_power_" + DAYS[0] + "_to_" + DAYS.at(-1)], ...rows].map(r => r.map(q).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"})); a.download = "iloilo-load-dropping-hours-by-barangay.csv";
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
 // rows are rebuilt every frame while playing, so a click (press + release) can miss; pointerdown lands first, click covers keyboard
 const pickRow = e => { const r = e.target.closest(".row"); if (r) { select(r.dataset.f); map.panTo(FD[r.dataset.f].p); } };
 $("log").addEventListener("pointerdown", pickRow);
@@ -494,9 +588,9 @@ function renderDetail(di, m) {
   const cur = list.find(e => e.di === di && e.s <= m && m < e.e);
   const br = v.b.map(b => b.endsWith("*") ? `<b>${b.slice(0, -1)}</b>` : b).join(", ");
   $("detail").innerHTML = `<h2>${selected} <span>${SUB_OF(selected)} substation</span></h2>
-  <dl class="kv"><dt>Status</dt><dd style="color:${cur ? "var(--dark)" : "var(--lit)"}">${cur ? "Dark for " + fmtDur(m - cur.s) + " · back " + fmtHM(cur.e) : "Online"}</dd><dt>Outages</dt><dd>${list.length} · ${hrs.toFixed(1)} h total</dd><dt>Average</dt><dd>${list.length ? fmtDur(hrs * 60 / list.length) : "—"}</dd></dl>
-  <span class="conf ${v.c}">${CONF[v.c]}</span>${v.d ? ` <span style="font-size:11px;color:var(--muted)">${v.d}</span>` : ""}
-  <div class="brgys">${v.b.length ? `<span style="color:var(--muted)">Serves (<b>bold</b> = whole barangay):</span> ${br}` : "Service area not published in the sources found."}</div>
+  <dl class="kv"><dt>${tr("Status")}</dt><dd style="color:${cur ? "var(--dark)" : "var(--lit)"}">${cur ? tr("Dark for") + " " + fmtDur(m - cur.s) + " · " + tr("back") + " " + fmtHM(cur.e) : tr("Online")}</dd><dt>${tr("Outages")}</dt><dd>${list.length} · ${hrs.toFixed(1)} h total</dd><dt>Average</dt><dd>${list.length ? fmtDur(hrs * 60 / list.length) : "—"}</dd></dl>
+  <span class="conf ${v.c}">${tr(CONF[v.c])}</span>${v.d ? ` <span style="font-size:11px;color:var(--muted)">${v.d}</span>` : ""}
+  <div class="brgys">${v.b.length ? `<span style="color:var(--muted)">${tr("Serves (<b>bold</b> = whole barangay):")}</span> ${br}` : tr("Service area not published in the sources found.")}</div>
   <ul>${list.map(e => `<li class="${e === cur ? "now" : ""}">${fmtShort(e.d).padEnd(7)} ${fmtHM(e.s)}–${fmtHM(e.e)} · ${fmtDur(e.e - e.s)}</li>`).join("")}</ul>`;
 }
 function seek(v) { t = Math.min(TOTAL - 0.01, Math.max(0, v)); render(); }
@@ -525,4 +619,6 @@ seek(H.has("t") ? +H.get("t") || 0 : DAYS.indexOf("2026-09-11") * W + (1149 - T0
 const hf = H.has("t") ? H.get("f") : "Diversion Feeder 3";
 if (FD[hf]) select(hf);
 if (layers[H.get("b")]) { $("q").value = H.get("b"); pickBrgy(H.get("b")); }
+let savedLang = null; try { savedLang = localStorage.getItem("lang"); } catch {}
+setLang(H.get("l") || savedLang || "en");
 </script>
