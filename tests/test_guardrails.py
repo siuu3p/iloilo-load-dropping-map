@@ -12,6 +12,10 @@ from xlsx_fixture import COLUMNS, frac, serial, workbook_from_events, write_xlsx
 EVENTS = json.loads((ROOT / "src/events.json").read_text(encoding="utf8"))
 FEEDERS = json.loads((ROOT / "src/geo.json").read_text(encoding="utf8"))["F"]["feeders"]
 TODAY = "2026-11-28"
+# a day after the last one in the data, so "new day" tests keep working as real days are added
+_next = datetime.date.fromisoformat(max(e[0] for e in EVENTS)) + datetime.timedelta(days=1)
+NEXT = _next.isoformat()
+NEXT_LABEL = f"{_next:%b} {_next.day}, {_next.year}"
 
 
 class Sandbox(unittest.TestCase):
@@ -41,7 +45,7 @@ class ImportGuardrails(Sandbox):
         self.assertEqual(self.events_now(), EVENTS)
 
     def test_new_day_is_added_and_backed_up(self):
-        new = ["2026-09-16", "Jaro Feeder 1", 1080, 1170]
+        new = [NEXT, "Jaro Feeder 1", 1080, 1170]
         workbook_from_events(self.xlsx, EVENTS + [new])
         code, out = self.run_import()
         self.assertEqual(code, 0, out)
@@ -50,14 +54,14 @@ class ImportGuardrails(Sandbox):
         self.assertEqual(json.loads((self.tmp / "src/events.json.bak").read_text()), EVENTS)
 
     def test_dry_run_writes_nothing(self):
-        workbook_from_events(self.xlsx, EVENTS + [["2026-09-16", "Jaro Feeder 1", 1080, 1170]])
+        workbook_from_events(self.xlsx, EVENTS + [[NEXT, "Jaro Feeder 1", 1080, 1170]])
         code, out = self.run_import("--dry-run")
         self.assertEqual(code, 0, out)
         self.assertIn("dry run", out)
         self.assertEqual(self.events_now(), EVENTS)
 
     def test_unknown_feeder_stops(self):
-        workbook_from_events(self.xlsx, EVENTS + [["2026-09-16", "Jaro Feeder 9", 1080, 1170]])
+        workbook_from_events(self.xlsx, EVENTS + [[NEXT, "Jaro Feeder 9", 1080, 1170]])
         code, out = self.run_import()
         self.assertEqual(code, 1)
         self.assertIn("unknown feeder 'Jaro Feeder 9'", out)
@@ -76,16 +80,16 @@ class ImportGuardrails(Sandbox):
     def test_ampm_mixup_is_fixed_from_duration(self):
         # typed 3:00 AM, online 4:30 PM, duration 1h30m -> offline should be 3:00 PM
         rows = [COLUMNS] + [[serial(e[0]), e[1], frac(e[2]), frac(e[3]), frac(e[3] - e[2])] for e in EVENTS]
-        rows.append([serial("2026-09-16"), "Molo Feeder 1", frac(180), frac(990), frac(90)])
+        rows.append([serial(NEXT), "Molo Feeder 1", frac(180), frac(990), frac(90)])
         write_xlsx(self.xlsx, {"Combined Data": rows})
         code, out = self.run_import()
         self.assertEqual(code, 0, out)
         self.assertIn("does not match the 1h 30m duration, using 15:00", out)
-        self.assertEqual(self.events_now()[-1], ["2026-09-16", "Molo Feeder 1", 900, 990])
+        self.assertEqual(self.events_now()[-1], [NEXT, "Molo Feeder 1", 900, 990])
 
     def test_overlap_stops(self):
-        workbook_from_events(self.xlsx, EVENTS + [["2026-09-16", "Jaro Feeder 1", 1080, 1170],
-                                                  ["2026-09-16", "Jaro Feeder 1", 1100, 1200]])
+        workbook_from_events(self.xlsx, EVENTS + [[NEXT, "Jaro Feeder 1", 1080, 1170],
+                                                  [NEXT, "Jaro Feeder 1", 1100, 1200]])
         code, out = self.run_import()
         self.assertEqual(code, 1)
         self.assertIn("overlaps", out)
@@ -97,7 +101,7 @@ class ImportGuardrails(Sandbox):
         self.assertIn("in the future", out)
 
     def test_text_time_stops_with_row_number(self):
-        rows = [COLUMNS] + [[serial("2026-09-16"), "Jaro Feeder 1", "6:00 PM", frac(1170), frac(90)]]
+        rows = [COLUMNS] + [[serial(NEXT), "Jaro Feeder 1", "6:00 PM", frac(1170), frac(90)]]
         write_xlsx(self.xlsx, {"Combined Data": rows})
         code, out = self.run_import()
         self.assertEqual(code, 1)
@@ -134,7 +138,7 @@ class BuildGuardrails(Sandbox):
         self.assertEqual((self.tmp / "index.html").read_bytes(), (ROOT / "index.html").read_bytes())
 
     def test_bad_events_block_build(self):
-        (self.tmp / "src/events.json").write_text(json.dumps(EVENTS + [["2026-09-16", "Nowhere Feeder", 1, 2]]))
+        (self.tmp / "src/events.json").write_text(json.dumps(EVENTS + [[NEXT, "Nowhere Feeder", 1, 2]]))
         code, out = self.build()
         self.assertEqual(code, 1)
         self.assertIn("BUILD STOPPED", out)
@@ -148,11 +152,11 @@ class BuildGuardrails(Sandbox):
         self.assertIn("__GEO__", out)
 
     def test_new_day_flags_stale_text(self):
-        (self.tmp / "src/events.json").write_text(json.dumps(EVENTS + [["2026-09-16", "Jaro Feeder 1", 1080, 1170]]))
+        (self.tmp / "src/events.json").write_text(json.dumps(EVENTS + [[NEXT, "Jaro Feeder 1", 1080, 1170]]))
         code, out = self.build("--check")
         self.assertEqual(code, 0, out)
-        self.assertIn("198 outages across 31 feeders", out)
-        self.assertIn("Sep 16, 2026", out)
+        self.assertIn(f"{len(EVENTS) + 1} outages across {len({e[1] for e in EVENTS})} feeders", out)
+        self.assertIn(NEXT_LABEL, out)
         self.assertFalse((self.tmp / "index.html").exists())
 
 
@@ -161,12 +165,12 @@ class Checks(unittest.TestCase):
         self.assertEqual(check_events(EVENTS, FEEDERS, datetime.date(2026, 11, 28)), ([], []))
 
     def test_early_offline_warns(self):
-        errs, warns = check_events([["2026-09-16", "Jaro Feeder 1", 200, 300]], FEEDERS, datetime.date(2026, 11, 28))
+        errs, warns = check_events([[NEXT, "Jaro Feeder 1", 200, 300]], FEEDERS, datetime.date(2026, 11, 28))
         self.assertEqual(errs, [])
         self.assertIn("AM/PM", warns[0])
 
     def test_duplicate_errors(self):
-        e = ["2026-09-16", "Jaro Feeder 1", 1080, 1170]
+        e = [NEXT, "Jaro Feeder 1", 1080, 1170]
         errs, _ = check_events([e, list(e)], FEEDERS, datetime.date(2026, 11, 28))
         self.assertTrue(any("listed twice" in x for x in errs))
 
