@@ -28,6 +28,9 @@ Search for a barangay above the map. The URL hash keeps the time, feeder, barang
 | `src/leaflet.css`, `src/leaflet.js` | Leaflet 1.9.4 from cdnjs, inlined at build time. |
 | `src/build.py` | Puts the pieces together into `index.html`. |
 | `src/import_workbook.py` | Rebuilds `src/events.json` from the workbook's Combined Data tab. Standard library only. |
+| `src/checks.py` | Data checks shared by the importer and the build. |
+| `tests/` | Guardrail tests: `python -m unittest discover tests`. |
+| `.claude/skills/update-outage-map/` | Claude Code skill for the update workflow, with its evals. |
 
 ## Rebuild
 
@@ -44,7 +47,22 @@ python src/import_workbook.py "Manual Load Dropping in Iloilo City.xlsx"
 python src/build.py
 ```
 
-The importer rewrites `src/events.json`. When an offline time does not match the online time minus the duration, it trusts the online time and duration and prints the row. It also flags feeders missing from `src/geo.json`. The subtitle, date range and headline update on their own. The meta description, Open Graph text, `og.jpg` and the About notes do not, so edit those in `src/template2.html` by hand.
+Run the importer with `--dry-run` first. It checks every row and prints the change (added, changed, removed) without writing anything.
+
+The importer rewrites `src/events.json` and keeps the old copy as `src/events.json.bak`. When an offline time does not match the online time minus the duration, it trusts the online time and duration and prints the row (`fixed:`).
+
+It stops, and leaves `src/events.json` as it was, when:
+
+- a feeder is not in `src/geo.json`
+- a time is text instead of an Excel time, or a row has no online time
+- an outage ends before it starts, is dated in the future, or overlaps another on the same feeder
+- outages already on the map are missing from the workbook. Rerun with `--allow-removals` only if they really should go.
+
+It also warns (`check:`) about outages that start before 6 AM or last over 12 hours.
+
+The subtitle, date range and headline update on their own. The meta description, Open Graph text, no-JS subtitle and the About "No posts were logged" line do not. `build.py` prints a `STALE:` line for each one that no longer matches the data, so fix those in `src/template2.html` and build again. `og.jpg` and the other About notes can't be checked, so look at them yourself.
+
+`build.py` refuses to build from data that fails the checks, and `python src/build.py --check` reports without writing `index.html`.
 
 ## Live volunteer feed (Google Sheet)
 

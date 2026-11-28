@@ -1,3 +1,9 @@
 __pycache__/
 *.pyc
-.claude/
+# keep local Claude settings out, but commit project skills
+.claude/*
+!.claude/skills/
+# importer backup and source workbooks
+src/events.json.bak
+*.xlsx
+!.claude/skills/**/evals/**/files/*.xlsx

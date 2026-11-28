@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: reports-ampm-autofix
+expected_outcome: |
+  The import corrects Molo Feeder 1 on Sep 16 from 06:05 to 18:05 using the duration. Claude completes the update and clearly tells the user about the correction, with the row, and asks them to fix the cell in the workbook.
+context:
+  scaffold_script: place-files.sh

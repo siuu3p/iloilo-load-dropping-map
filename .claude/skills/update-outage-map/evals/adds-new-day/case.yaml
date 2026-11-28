@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: adds-new-day
+expected_outcome: |
+  The three Sep 16 outages are imported after a dry run, index.html is rebuilt, the hand-written meta/OG/subtitle text is updated to 200 outages and Sep 16, the page is smoke-tested, nothing is committed, and the reply reports the change and says og.jpg needs a new screenshot.
+context:
+  scaffold_script: place-files.sh
