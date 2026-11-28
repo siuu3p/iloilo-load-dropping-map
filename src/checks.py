@@ -131,3 +131,18 @@ def stale_text(template, events):
             if got != {d.day for d in miss}:
                 out.append(f"About says no posts for {m.group(1)!r}, data is missing {', '.join(short(d) for d in miss)}")
     return out
+
+
+def stale_readme(readme, events):
+    """Counts and date range written into README.md that no longer match the data."""
+    s = summary(events)
+    out = []
+    want = f"{s['outages']} outages across {s['feeders']} feeders"
+    for m in re.finditer(r"(\d+) outages across (\d+) feeders", readme):
+        if m.group(0) != want:
+            out.append(f"README.md says {m.group(0)!r}, data says {want!r}")
+    rng = f"{short(s['first'])} – {short(s['last'])}, {s['last'].year}"
+    for m in re.finditer(r"[A-Z][a-z]{2} \d{1,2} – [A-Z][a-z]{2} \d{1,2}, \d{4}", readme):
+        if m.group(0) != rng:
+            out.append(f"README.md says {m.group(0)!r}, data says {rng!r}")
+    return out

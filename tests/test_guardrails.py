@@ -6,7 +6,7 @@ import datetime, json, pathlib, shutil, subprocess, sys, tempfile, unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tests"))
-from checks import check_events, diff_events, stale_text  # noqa: E402
+from checks import check_events, diff_events, stale_readme, stale_text  # noqa: E402
 from xlsx_fixture import COLUMNS, frac, serial, workbook_from_events, write_xlsx  # noqa: E402
 
 EVENTS = json.loads((ROOT / "src/events.json").read_text(encoding="utf8"))
@@ -183,6 +183,12 @@ class Checks(unittest.TestCase):
         a = [["d", "f", 1, 2], ["d", "f", 5, 6]]
         b = [["d", "f", 1, 3], ["d", "g", 7, 8]]
         self.assertEqual(diff_events(a, b), ([["d", "g", 7, 8]], [["d", "f", 5, 6]], [(["d", "f", 1, 2], ["d", "f", 1, 3])]))
+
+    def test_stale_readme(self):
+        r = "replay, Aug 27 – Sep 15, 2026.\n- 197 outages across 31 feeders, from"
+        self.assertEqual(len(stale_readme(r, EVENTS)), 0)
+        out = stale_readme(r, EVENTS + [[NEXT, "Jaro Feeder 1", 1080, 1170]])
+        self.assertEqual(len(out), 2)
 
     def test_stale_about_missing_days(self):
         t = '<p class="sub" id="sub">x · Source</p>No posts were logged for Sep 6, 12 and 13.'

@@ -6,13 +6,13 @@
 #   - events.json and geo.json must parse and pass checks.py, or nothing is built.
 #   - The built page must have no leftover placeholders and a sane size.
 #   - Hand-written text in template2.html (meta/OG description, no-JS subtitle,
-#     About "No posts were logged for ...") is compared with the data and any
+#     About "No posts were logged for ...") and README.md counts is compared with the data and any
 #     mismatch is printed as STALE. og.jpg cannot be checked: look at it yourself.
 import base64, json, pathlib, sys
 
 here = pathlib.Path(__file__).parent
 sys.path.insert(0, str(here))
-from checks import check_events, stale_text, summary  # noqa: E402
+from checks import check_events, stale_readme, stale_text, summary  # noqa: E402
 
 PLACEHOLDERS = ["__LEAFLETCSS__", "__EVENTS__", "__GEO__", "__IMG__", "__LEAFLETJS__"]
 MIN_KB, MAX_KB = 1500, 8000  # current page is about 2.7 MB
@@ -60,6 +60,9 @@ def main(argv):
         fail(f"built page is {kb} KB, expected {MIN_KB}-{MAX_KB} KB. Is base.webp or leaflet.js missing or replaced?")
 
     stale = stale_text(template, events)
+    readme = here.parent / "README.md"
+    if readme.exists():
+        stale += stale_readme(readme.read_text(encoding="utf8"), events)
     for s in stale:
         print("STALE:", s)
     s = summary(events)
@@ -71,7 +74,7 @@ def main(argv):
         (here.parent / "index.html").write_text(html, encoding="utf8")
         print("built", kb, "KB")
     if stale:
-        print(f"{len(stale)} hand-written line(s) in src/template2.html are out of date. Fix them, then build again. "
+        print(f"{len(stale)} hand-written line(s) in src/template2.html or README.md are out of date. Fix them, then build again. "
               "Also check og.jpg and the About notes.")
 
 
